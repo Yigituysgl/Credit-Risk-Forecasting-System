@@ -1,3 +1,4 @@
+
 import streamlit as st
 import joblib
 import numpy as np
@@ -6,12 +7,14 @@ import pandas as pd
 
 model = joblib.load("Credit_XGBoost_model.pkl")
 scaler = joblib.load("scaler.pkl")
-model_features = joblib.load("model_features.pkl") 
+model_features = joblib.load("model_features.pkl")  
 
-st.title(" Credit Risk Forecast")
+st.title("💳 Credit Risk Forecast")
 st.markdown("This app predicts the risk of loan default using key financial and credit features.")
 
-st.sidebar.header(" Applicant Information")
+st.sidebar.header("🧾 Applicant Information")
+
+
 loan_amnt = st.sidebar.number_input("Loan Amount", 0, 100000, 10000)
 term = st.sidebar.selectbox("Loan Term", ["36 months", "60 months"])
 int_rate = st.sidebar.slider("Interest Rate (%)", 0.0, 30.0, 10.0)
@@ -34,19 +37,25 @@ input_df = pd.DataFrame({
 })
 
 
+input_df['grade'] = pd.Categorical(input_df['grade'], categories=["A", "B", "C", "D", "E", "F", "G"])
+input_df['home_ownership'] = pd.Categorical(input_df['home_ownership'], categories=["RENT", "OWN", "MORTGAGE", "OTHER", "NONE"])
+input_df['term'] = pd.Categorical(input_df['term'], categories=["36 months", "60 months"])
+
+
 input_encoded = pd.get_dummies(input_df)
-
-
 input_encoded = input_encoded.reindex(columns=model_features, fill_value=0)
 
 
 input_scaled = scaler.transform(input_encoded)
 
+
 prediction = model.predict_proba(input_scaled)[0][1]
 
 st.subheader(" Prediction Result")
 st.write(f"**Estimated Default Risk:** {prediction:.2%}")
+
 if prediction > 0.5:
     st.error("⚠️ High risk of default")
 else:
     st.success("✅ Low risk of default")
+
