@@ -3,56 +3,51 @@ import joblib
 import numpy as np
 import pandas as pd
 
+
 model = joblib.load("Credit_XGBoost_model.pkl")
 scaler = joblib.load("scaler.pkl")
-model_features = joblib.load("model_features.pkl")
+model_features = joblib.load("model_features.pkl")  # expected feature names
 
-st.set_page_config(page_title="Credit Risk Predictor", layout="centered")
+
 st.title("Credit Risk Forecast")
-st.markdown("""
-This app predicts the risk of loan default using key financial and credit features.
-""")
+st.markdown("This app predicts the risk of loan default using key financial and credit features.")
 
 
-selected_features = [
-    'loan_amnt', 'term', 'int_rate', 'installment', 'annual_inc',
-    'dti', 'open_acc', 'revol_util', 'grade', 'home_ownership'
-]
+st.sidebar.header(" Applicant Information")
 
-user_input = {}
-st.sidebar.header("📋 Applicant Information")
+loan_amnt = st.sidebar.number_input("Loan Amount", 0, 50000, 10000)
+term = st.sidebar.selectbox("Loan Term (months)", [36, 60])
+int_rate = st.sidebar.slider("Interest Rate (%)", 0.0, 30.0, 13.0)
+installment = st.sidebar.number_input("Installment Amount", 0, 2000, 300)
+annual_inc = st.sidebar.number_input("Annual Income", 0, 200000, 50000)
+dti = st.sidebar.number_input("Debt-to-Income Ratio (DTI)", 0.0, 50.0, 18.0)
+grade = st.sidebar.selectbox("Loan Grade", ["A", "B", "C", "D", "E", "F", "G"])
+home_ownership = st.sidebar.selectbox("Home Ownership", ["RENT", "OWN", "MORTGAGE"])
 
-grade_options = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
-home_ownership_options = ['RENT', 'OWN', 'MORTGAGE', 'OTHER']
-
-for feature in selected_features:
-    if feature in ['int_rate', 'revol_util']:
-        user_input[feature] = st.sidebar.slider(f"{feature}", 0.0, 30.0, 10.0)
-    elif feature == 'term':
-        user_input[feature] = st.sidebar.selectbox("Loan Term (months)", [36, 60])
-    elif feature == 'grade':
-        user_input[feature] = st.sidebar.selectbox("Grade", grade_options)
-    elif feature == 'home_ownership':
-        user_input[feature] = st.sidebar.selectbox("Home Ownership", home_ownership_options)
-    else:
-        user_input[feature] = st.sidebar.number_input(f"{feature}", step=1.0)
-
-
-input_df = pd.DataFrame([user_input])
-input_df['term'] = input_df['term'].astype(str)
-input_df = pd.get_dummies(input_df)
+input_df = pd.DataFrame({
+    "loan_amnt": [loan_amnt],
+    "term": [term],
+    "int_rate": [int_rate],
+    "installment": [installment],
+    "annual_inc": [annual_inc],
+    "dti": [dti],
+    "grade": [grade],
+    "home_ownership": [home_ownership],
+})
 
 
-input_df = input_df.reindex(columns=model_features, fill_value=0)
+input_encoded = pd.get_dummies(input_df)
+input_encoded = input_encoded.reindex(columns=model_features, fill_value=0)
 
 
-input_scaled = scaler.transform(input_df)
+input_scaled = scaler.transform(input_encoded)
 
 
-prediction = model.predict_proba(input_scaled)[0][1]
+prediction = model.predict_proba(input_scaled)[0][1]  
 
-st.subheader("Default Risk Probability:")
-st.metric(label="Risk Score (0 to 1)", value=f"{prediction:.2f}")
+st.subheader("🔎 Prediction Result")
+st.write(f"**Estimated Default Risk:** {prediction:.2%}")
+
 
 if prediction > 0.5:
     st.error("⚠️ High risk of default")
