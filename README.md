@@ -1,39 +1,32 @@
 # Credit Risk Forecasting: Lending Club default model
 
-[![tests](https://github.com/Yigituysgl/Credit-Risk-Forecasting-System/actions/workflows/tests.yml/badge.svg)](https://github.com/Yigituysgl/Credit-Risk-Forecasting-System/actions/workflows/tests.yml)
+Predicts the probability that a Lending Club consumer loan defaults, using only
+information available when the application is decided. On loans issued in 2015
+(out of time), the calibrated logistic regression reaches a ROC AUC of 0.698
+and a KS of 0.290, and its riskiest decile defaults **10.4×** as often as its
+safest. Logistic regression was chosen over XGBoost because it ranks almost as
+well (ROC AUC 0.698 vs 0.703), has the better Brier score (0.1189 vs 0.1195)
+and is easier to explain.
 
-Predicts the probability that a Lending Club consumer loan is charged off,
-using only information available when the loan application is decided, and
-evaluates it out of time on loans issued in a later year.
+[![tests](https://github.com/Yigituysgl/Credit-Risk-Forecasting-System/actions/workflows/tests.yml/badge.svg)](https://github.com/Yigituysgl/Credit-Risk-Forecasting-System/actions/workflows/tests.yml)
 
 All numbers below are produced by the code in this repository and stored in
 [`reports/metrics.json`](reports/metrics.json) and
 [`reports/evaluation.json`](reports/evaluation.json).
 
-## The problem with the original version
+## How leakage is prevented
 
-An earlier version of this project reported a ROC AUC of 0.995. That number
-was not real:
-
-- **Target leakage.** The model used post-outcome fields such as `recoveries`,
-  `total_pymnt`, `total_rec_prncp`, `last_pymnt_amnt`, `out_prncp` and the
-  refreshed `last_fico_*` scores. These are recorded *after* the loan is issued
-  and effectively encode whether it defaulted.
-- **Random split.** Train and test were a random 80/20 split of the same years,
-  and imputation and scaling were fitted on all rows before the split.
-- **Wrong labels.** Loans still running (`Current`, in grace period, early
-  late stages) were labelled as non-defaults.
-
-What changed:
-
-- Only application-time features; every one of the 151 raw columns is either
-  used or excluded with a written reason, and the training run fails if a new
-  column appears unaccounted for.
-- Out-of-time split by issue date; all preprocessing is fitted on the training
-  period only, inside a scikit-learn pipeline.
-- Target defined on finished loans only: `Charged Off`/`Default` vs `Fully Paid`.
-- Probability calibration on a later slice of the training period.
-- Tests (pytest, synthetic data) running in GitHub Actions.
+- **Application-time features only.** Every one of the 151 raw columns is
+  either used or excluded with a written reason
+  ([exclusion reasons](credit_risk/features.py)). Post-outcome fields such as
+  payments received, recoveries and refreshed credit scores are excluded, and
+  the training run fails if a column appears that is not accounted for.
+- **Time-based split.** Train and test are split by issue date: the model is
+  fit on 2013 to mid-2014 loans, calibrated on 2014 H2 and tested on 2015.
+- **Finished loans only.** The target is `Charged Off`/`Default` vs
+  `Fully Paid`; loans still running are dropped, not counted as non-defaults.
+- **Preprocessing fit on training data only.** Imputation, scaling and
+  encoding live inside a scikit-learn pipeline fitted on the training period.
 
 ## Data
 
