@@ -25,6 +25,19 @@ def test_split_rejects_bad_window():
         S.time_split(_frame(), pd.Timestamp("2015-01-01"), pd.Timestamp("2014-01-01"))
 
 
+def test_calibration_split_is_later_than_fit():
+    train, _ = S.time_split(_frame())
+    fit, cal = S.calibration_split(train, pd.Timestamp("2014-07-01"))
+    assert fit["issue_d"].max() < cal["issue_d"].min()
+    assert len(fit) + len(cal) == len(train)
+
+
+def test_calibration_split_must_be_inside_train():
+    train, _ = S.time_split(_frame())
+    with pytest.raises(ValueError):
+        S.calibration_split(train, pd.Timestamp("2015-06-01"))
+
+
 def test_summarize():
     train, _ = S.time_split(_frame())
     s = S.summarize(train)

@@ -28,6 +28,25 @@ def test_models_fit_and_learn_signal(synthetic_inputs, name):
     assert M.evaluate(test["default"], p)["roc_auc"] > 0.7
 
 
+def test_calibration_preserves_ranking_and_moves_mean(synthetic_inputs):
+    df = synthetic_inputs
+    fit, cal, test = df.iloc[:200], df.iloc[200:300], df.iloc[300:]
+    model = M.build_models()["xgboost"].fit(fit[MODEL_FEATURES], fit["default"])
+    calibrated = M.calibrate(model, cal[MODEL_FEATURES], cal["default"])
+    p_raw = model.predict_proba(test[MODEL_FEATURES])[:, 1]
+    p_cal = calibrated.predict_proba(test[MODEL_FEATURES])[:, 1]
+    assert M.evaluate(test["default"], p_raw)["roc_auc"] == M.evaluate(test["default"], p_cal)["roc_auc"]
+    assert not np.allclose(p_raw, p_cal)
+
+
+def test_build_models_with_feature_subset(synthetic_inputs):
+    df = synthetic_inputs
+    numeric, categorical = ["loan_amnt", "fico_range_low"], ["purpose"]
+    model = M.build_models(numeric, categorical)["logistic_regression"]
+    model.fit(df[numeric + categorical], df["default"])
+    assert model.named_steps["pre"].n_features_in_ == 3
+
+
 def test_preprocessor_ignores_unseen_category(synthetic_inputs):
     df = synthetic_inputs
     model = M.build_models()["logistic_regression"].fit(df[MODEL_FEATURES], df["default"])

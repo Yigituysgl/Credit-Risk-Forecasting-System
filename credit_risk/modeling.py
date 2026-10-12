@@ -5,7 +5,9 @@ Pipeline, so it is fit on the training rows only.
 """
 
 import numpy as np
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.compose import ColumnTransformer
+from sklearn.frozen import FrozenEstimator
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score, roc_curve
@@ -39,7 +41,7 @@ def _to_object(X):
     return X.astype(object).where(X.notna(), np.nan)
 
 
-def build_preprocessor():
+def build_preprocessor(numeric_inputs=NUMERIC_INPUTS, categorical_inputs=CATEGORICAL_FEATURES):
     numeric = Pipeline([
         ("impute", SimpleImputer(strategy="median", add_indicator=True)),
         ("scale", StandardScaler()),
@@ -50,22 +52,31 @@ def build_preprocessor():
         ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
     ])
     return ColumnTransformer(
-        [("num", numeric, NUMERIC_INPUTS), ("cat", categorical, CATEGORICAL_FEATURES)],
+        [("num", numeric, numeric_inputs), ("cat", categorical, categorical_inputs)],
         remainder="drop",
     )
 
 
-def build_models():
+def build_models(numeric_inputs=NUMERIC_INPUTS, categorical_inputs=CATEGORICAL_FEATURES):
     return {
         "logistic_regression": Pipeline([
-            ("pre", build_preprocessor()),
+            ("pre", build_preprocessor(numeric_inputs, categorical_inputs)),
             ("model", LogisticRegression(**LOGREG_PARAMS)),
         ]),
         "xgboost": Pipeline([
-            ("pre", build_preprocessor()),
+            ("pre", build_preprocessor(numeric_inputs, categorical_inputs)),
             ("model", XGBClassifier(**XGB_PARAMS)),
         ]),
     }
+
+
+def calibrate(model, X_cal, y_cal):
+    """Platt (sigmoid) calibration of an already-fitted model on a held-out slice.
+
+    Sigmoid is monotonic, so ranking metrics (ROC AUC, KS) are unchanged and
+    only the probability scale moves.
+    """
+    return CalibratedClassifierCV(FrozenEstimator(model), method="sigmoid").fit(X_cal, y_cal)
 
 
 def ks_statistic(y_true, y_score):

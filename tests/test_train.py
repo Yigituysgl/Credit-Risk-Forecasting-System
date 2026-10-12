@@ -38,10 +38,16 @@ def test_train_end_to_end(tmp_path):
     train.main(["--data", str(data), "--report", str(report_path), "--models-dir", str(models_dir)])
 
     report = json.loads(report_path.read_text(encoding="utf-8"))
-    assert report["split"]["train"]["issue_d_max"] < report["split"]["test"]["issue_d_min"]
+    split = report["split"]
+    assert split["fit"]["issue_d_max"] < split["calibration"]["issue_d_min"]
+    assert split["calibration"]["issue_d_max"] < split["test"]["issue_d_min"]
     assert report["data"]["filtering"]["dropped_non_final_status"] == {"Current": 10}
-    for name in ("xgboost", "logistic_regression"):
-        assert set(report["models"][name]) >= {"roc_auc", "pr_auc", "brier", "ks"}
-        assert (models_dir / f"{name}.joblib").exists()
+    for set_name in train.FEATURE_SETS:
+        for name in ("xgboost", "logistic_regression"):
+            res = report["models"][set_name][name]
+            for stage in ("uncalibrated", "calibrated"):
+                assert set(res[stage]) >= {"roc_auc", "pr_auc", "brier", "ks", "mean_predicted_pd"}
+            assert (models_dir / set_name / f"{name}.joblib").exists()
+            assert (models_dir / set_name / f"{name}_calibrated.joblib").exists()
     assert set(report["excluded"]) == set(F.EXCLUDED)
     assert str(tmp_path) not in report_path.read_text(encoding="utf-8")
