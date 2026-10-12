@@ -1,0 +1,110 @@
+{
+  "model": "logistic_regression (calibrated), feature set 'full', test period",
+  "risk_deciles": [
+    {
+      "decile": 1,
+      "loans": 28303,
+      "observed_default_rate": 0.0318,
+      "mean_predicted_pd": 0.0288
+    },
+    {
+      "decile": 2,
+      "loans": 28303,
+      "observed_default_rate": 0.0553,
+      "mean_predicted_pd": 0.0539
+    },
+    {
+      "decile": 3,
+      "loans": 28302,
+      "observed_default_rate": 0.0773,
+      "mean_predicted_pd": 0.0736
+    },
+    {
+      "decile": 4,
+      "loans": 28303,
+      "observed_default_rate": 0.0977,
+      "mean_predicted_pd": 0.0917
+    },
+    {
+      "decile": 5,
+      "loans": 28302,
+      "observed_default_rate": 0.121,
+      "mean_predicted_pd": 0.1104
+    },
+    {
+      "decile": 6,
+      "loans": 28303,
+      "observed_default_rate": 0.1448,
+      "mean_predicted_pd": 0.1311
+    },
+    {
+      "decile": 7,
+      "loans": 28302,
+      "observed_default_rate": 0.1755,
+      "mean_predicted_pd": 0.1549
+    },
+    {
+      "decile": 8,
+      "loans": 28303,
+      "observed_default_rate": 0.204,
+      "mean_predicted_pd": 0.1836
+    },
+    {
+      "decile": 9,
+      "loans": 28302,
+      "observed_default_rate": 0.2505,
+      "mean_predicted_pd": 0.2224
+    },
+    {
+      "decile": 10,
+      "loans": 28303,
+      "observed_default_rate": 0.3307,
+      "mean_predicted_pd": 0.3041
+    }
+  ],
+  "top_to_bottom_decile_default_ratio": 10.4,
+  "default_rate_by_grade_36_month_loans": {
+    "A": {
+      "train_default_rate": 0.0512,
+      "train_loans": 52390,
+      "test_default_rate": 0.0542,
+      "test_loans": 70118
+    },
+    "B": {
+      "train_default_rate": 0.1032,
+      "train_loans": 93773,
+      "test_default_rate": 0.119,
+      "test_loans": 91725
+    },
+    "C": {
+      "train_default_rate": 0.1651,
+      "train_loans": 68735,
+      "test_default_rate": 0.1944,
+      "test_loans": 77423
+    },
+    "D": {
+      "train_default_rate": 0.2144,
+      "train_loans": 35015,
+      "test_default_rate": 0.2622,
+      "test_loans": 32711
+    },
+    "E": {
+      "train_default_rate": 0.2586,
+      "train_loans": 10297,
+      "test_default_rate": 0.3284,
+      "test_loans": 9443
+    },
+    "F": {
+      "train_default_rate": 0.2886,
+      "train_loans": 2588,
+      "test_default_rate": 0.424,
+      "test_loans": 1361
+    },
+    "G": {
+      "train_default_rate": 0.3557,
+      "train_loans": 194,
+      "test_default_rate": 0.4612,
+      "test_loans": 245
+    }
+  }
+}
