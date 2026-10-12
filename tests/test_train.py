@@ -29,6 +29,13 @@ def _raw_csv(path, n=600):
     df.to_csv(path, index=False)
 
 
+def test_without_pricing_set_drops_exactly_pricing_features():
+    full = set(sum(train.FEATURE_SETS["full"], []))
+    reduced = set(sum(train.FEATURE_SETS["without_pricing"], []))
+    assert full == set(F.MODEL_FEATURES)
+    assert full - reduced == set(F.PRICING_FEATURES)
+
+
 def test_train_end_to_end(tmp_path):
     data = tmp_path / "raw.csv"
     _raw_csv(data)

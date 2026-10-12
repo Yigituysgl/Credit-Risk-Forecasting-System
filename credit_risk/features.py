@@ -86,6 +86,11 @@ CATEGORICAL_FEATURES = [
 
 MODEL_FEATURES = NUMERIC_FEATURES + list(ENGINEERED_FEATURES) + CATEGORICAL_FEATURES
 
+# Lending Club's own risk pricing. Known before issuance, but it encodes LC's
+# internal model; the sensitivity run drops it to measure what the model adds.
+# installment is a function of loan_amnt, term and int_rate, so it goes too.
+PRICING_FEATURES = ["int_rate", "installment", "sub_grade"]
+
 # Raw columns consumed to build engineered features (not model inputs themselves).
 SOURCE_COLUMNS = {
     "term": "source of term_months",

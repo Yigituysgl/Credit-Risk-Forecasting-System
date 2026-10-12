@@ -26,6 +26,11 @@ from credit_risk.target import MATURITY_BUFFER_MONTHS, SNAPSHOT_DATE, TARGET
 
 FEATURE_SETS = {
     "full": (NUMERIC_INPUTS, F.CATEGORICAL_FEATURES),
+    # Sensitivity: how much predictive power remains without LC's own pricing.
+    "without_pricing": (
+        [c for c in NUMERIC_INPUTS if c not in F.PRICING_FEATURES],
+        [c for c in F.CATEGORICAL_FEATURES if c not in F.PRICING_FEATURES],
+    ),
 }
 
 
@@ -88,6 +93,10 @@ def main(argv=None):
         },
         "split": split_summary,
         "evaluation": "metrics on the test period; calibration = Platt (sigmoid) fit on the calibration period",
+        "feature_sets": {
+            "full": "all model features",
+            "without_pricing": f"all model features except Lending Club pricing: {', '.join(F.PRICING_FEATURES)}",
+        },
         "models": results,
         "params": {"xgboost": XGB_PARAMS, "logistic_regression": LOGREG_PARAMS},
         "features": {
