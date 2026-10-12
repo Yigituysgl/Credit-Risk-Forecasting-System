@@ -5,7 +5,8 @@ Usage (after train.py):
 
 Recreates the same fit / calibration / test split as train.py, scores the
 test period with the models saved under models/, checks the scores
-reproduce reports/metrics.json, and writes four PNGs:
+reproduce reports/metrics.json, writes reports/evaluation.json (risk
+deciles of the headline model, default rate by grade) and four PNGs:
 
     model_comparison.png    ROC and precision-recall curves
     calibration.png         reliability curves before/after calibration
@@ -31,6 +32,8 @@ from credit_risk.modeling import evaluate  # noqa: E402
 from credit_risk.target import TARGET  # noqa: E402
 
 MODELS = {"xgboost": "XGBoost", "logistic_regression": "Logistic regression"}
+# Headline model: similar ranking to XGBoost, better Brier score, simpler to explain.
+HEADLINE_MODEL = "logistic_regression"
 FEATURE_SETS = {"full": "All features", "without_pricing": "Without LC pricing"}
 
 # Reference palette (dataviz skill), light mode: categorical slots 1-2, chrome and ink.
@@ -79,6 +82,7 @@ def parse_args(argv=None):
     p.add_argument("--models-dir", default=Path("models"), type=Path)
     p.add_argument("--metrics", default=Path("reports/metrics.json"), type=Path)
     p.add_argument("--out-dir", default=Path("docs"), type=Path)
+    p.add_argument("--evaluation", default=Path("reports/evaluation.json"), type=Path)
     return p.parse_args(argv)
 
 
@@ -186,16 +190,35 @@ def plot_calibration(scores, y, metrics, path):
     _save(fig, path)
 
 
-def plot_deciles(scores, y, path):
-    p = scores["full", "xgboost", "calibrated"]
+def risk_deciles(y, p):
+    """Observed and mean predicted default rate in ten equal-count bins of predicted PD."""
     df = pd.DataFrame({"y": np.asarray(y), "p": p})
     df["decile"] = pd.qcut(df["p"], 10, labels=False) + 1
-    g = df.groupby("decile").agg(obs=("y", "mean"), pred=("p", "mean"), n=("y", "size"))
+    return df.groupby("decile").agg(obs=("y", "mean"), pred=("p", "mean"), n=("y", "size"))
 
+
+def default_rate_by_grade(splits):
+    """Default rate per LC grade, training period vs test period, 36-month loans only.
+
+    The test period only contains 36-month loans, so the training side is
+    restricted to them as well to compare like with like.
+    """
+    train = pd.concat([splits["fit"], splits["calibration"]])
+    out = {}
+    for period, df in (("train", train), ("test", splits["test"])):
+        df = df[df["term_months"] == 36]
+        g = df.groupby(df["sub_grade"].str[0])[TARGET].agg(["mean", "size"])
+        for grade, row in g.iterrows():
+            out.setdefault(grade, {})[f"{period}_default_rate"] = round(float(row["mean"]), 4)
+            out[grade][f"{period}_loans"] = int(row["size"])
+    return out
+
+
+def plot_deciles(g, name, path):
     fig, ax = plt.subplots(figsize=(10, 4.8))
     fig.subplots_adjust(top=0.80, bottom=0.13, left=0.07, right=0.98)
     x = g.index.to_numpy()
-    ax.bar(x, g["obs"], width=0.6, color=COLORS["xgboost"], label="Observed default rate", zorder=2)
+    ax.bar(x, g["obs"], width=0.6, color=COLORS[name], label="Observed default rate", zorder=2)
     ax.plot(x, g["pred"], color=INK_2, linewidth=0, marker="o", markerfacecolor=INK_2, **DOT,
             label="Mean predicted PD (calibrated)", zorder=3)
     for xi in (x[0], x[-1]):
@@ -206,7 +229,7 @@ def plot_deciles(scores, y, path):
     ax.grid(axis="x", visible=False)
     ax.legend(loc="upper left")
     ratio = g["obs"].iloc[-1] / g["obs"].iloc[0]
-    _title(fig, "Default rate by XGBoost risk decile, 2015 test set",
+    _title(fig, f"Default rate by {MODELS[name].lower()} risk decile, 2015 test set",
            f"Each decile holds ~{int(g['n'].median()):,} loans. "
            f"The riskiest decile defaults {ratio:.1f}x as often as the safest.")
     _save(fig, path)
@@ -260,10 +283,25 @@ def main(argv=None):
     check_against_metrics(scores, y, metrics)
     print("Saved models reproduce metrics.json")
 
+    deciles = risk_deciles(y, scores["full", HEADLINE_MODEL, "calibrated"])
+    evaluation = {
+        "model": f"{HEADLINE_MODEL} (calibrated), feature set 'full', test period",
+        "risk_deciles": [
+            {"decile": int(d), "loans": int(r["n"]), "observed_default_rate": round(float(r["obs"]), 4),
+             "mean_predicted_pd": round(float(r["pred"]), 4)}
+            for d, r in deciles.iterrows()
+        ],
+        "top_to_bottom_decile_default_ratio": round(float(deciles["obs"].iloc[-1] / deciles["obs"].iloc[0]), 1),
+        "default_rate_by_grade_36_month_loans": default_rate_by_grade(splits),
+    }
+    args.evaluation.parent.mkdir(parents=True, exist_ok=True)
+    args.evaluation.write_text(json.dumps(evaluation, indent=2) + "\n", encoding="utf-8")
+    print(f"Wrote {args.evaluation}")
+
     args.out_dir.mkdir(parents=True, exist_ok=True)
     plot_model_comparison(scores, y, metrics, args.out_dir / "model_comparison.png")
     plot_calibration(scores, y, metrics, args.out_dir / "calibration.png")
-    plot_deciles(scores, y, args.out_dir / "default_rate_by_decile.png")
+    plot_deciles(deciles, HEADLINE_MODEL, args.out_dir / "default_rate_by_decile.png")
     plot_sensitivity(metrics, args.out_dir / "sensitivity.png")
 
 
