@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from credit_risk import modeling as M
-from credit_risk.features import CATEGORICAL_FEATURES, MODEL_FEATURES
+from credit_risk.features import MODEL_FEATURES
 
 
 def test_ks_statistic_bounds():
@@ -34,9 +34,3 @@ def test_preprocessor_ignores_unseen_category(synthetic_inputs):
     row = df[MODEL_FEATURES].iloc[[0]].copy()
     row["sub_grade"] = "G5"
     assert model.predict_proba(row).shape == (1, 2)
-
-
-def test_feature_defaults_cover_all_inputs(synthetic_inputs):
-    d = M.feature_defaults(synthetic_inputs)
-    assert set(d) == set(MODEL_FEATURES)
-    assert all(isinstance(d[c], str) for c in CATEGORICAL_FEATURES)

@@ -82,10 +82,3 @@ def evaluate(y_true, y_score):
         "ks": round(ks_statistic(y_true, y_score), 4),
         "mean_predicted_pd": round(float(np.mean(y_score)), 4),
     }
-
-
-def feature_defaults(train_df):
-    """Training medians (numeric) and modes (categorical) of the raw model inputs."""
-    defaults = {c: float(train_df[c].median()) for c in NUMERIC_INPUTS}
-    defaults.update({c: str(train_df[c].mode(dropna=True).iloc[0]) for c in CATEGORICAL_FEATURES})
-    return defaults

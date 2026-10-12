@@ -3,8 +3,8 @@
 Usage:
     python train.py --data path/to/accepted_2007_to_2018Q4.csv
 
-Writes reports/metrics.json and, under models/ (git-ignored), the fitted
-pipelines plus the training-set feature defaults used by the app.
+Writes reports/metrics.json and the fitted pipelines under models/
+(git-ignored).
 """
 
 import argparse
@@ -19,7 +19,7 @@ import xgboost
 
 from credit_risk import features as F
 from credit_risk.data import add_engineered_features, load_raw
-from credit_risk.modeling import LOGREG_PARAMS, XGB_PARAMS, build_models, evaluate, feature_defaults
+from credit_risk.modeling import LOGREG_PARAMS, XGB_PARAMS, build_models, evaluate
 from credit_risk.split import TEST_START, WINDOW_START, summarize, time_split
 from credit_risk.target import MATURITY_BUFFER_MONTHS, SNAPSHOT_DATE, TARGET, build_target
 
@@ -61,9 +61,6 @@ def main(argv=None):
         results[name] = metrics
         print(f"  test: {metrics}")
         joblib.dump(model, args.models_dir / f"{name}.joblib")
-
-    defaults_path = args.models_dir / "feature_defaults.json"
-    defaults_path.write_text(json.dumps(feature_defaults(train), indent=2), encoding="utf-8")
 
     report = {
         "data": {

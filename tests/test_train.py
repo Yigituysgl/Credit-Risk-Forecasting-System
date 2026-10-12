@@ -45,5 +45,3 @@ def test_train_end_to_end(tmp_path):
         assert (models_dir / f"{name}.joblib").exists()
     assert set(report["excluded"]) == set(F.EXCLUDED)
     assert str(tmp_path) not in report_path.read_text(encoding="utf-8")
-    defaults = json.loads((models_dir / "feature_defaults.json").read_text(encoding="utf-8"))
-    assert set(defaults) == set(F.MODEL_FEATURES)
