@@ -4,6 +4,7 @@
     "snapshot_date": "2019-03",
     "maturity_buffer_months": 3,
     "window_start": "2013-01",
+    "calibration_start": "2014-07",
     "test_start": "2015-01",
     "target": "1 = Charged Off or Default, 0 = Fully Paid (matured loans only)",
     "filtering": {
@@ -21,15 +22,25 @@
     }
   },
   "split": {
-    "train": {
+    "fit": {
       "issue_d_min": "2013-01",
-      "issue_d_max": "2014-12",
-      "rows": 297374,
-      "defaults": 43339,
-      "default_rate": 0.1457,
+      "issue_d_max": "2014-06",
+      "rows": 206759,
+      "defaults": 30539,
+      "default_rate": 0.1477,
       "rows_by_term_months": {
-        "36": 262992,
+        "36": 172377,
         "60": 34382
+      }
+    },
+    "calibration": {
+      "issue_d_min": "2014-07",
+      "issue_d_max": "2014-12",
+      "rows": 90615,
+      "defaults": 12800,
+      "default_rate": 0.1413,
+      "rows_by_term_months": {
+        "36": 90615
       }
     },
     "test": {
@@ -43,22 +54,83 @@
       }
     }
   },
+  "evaluation": "metrics on the test period; calibration = Platt (sigmoid) fit on the calibration period",
+  "feature_sets": {
+    "full": "all model features",
+    "without_pricing": "all model features except Lending Club pricing: int_rate, installment, sub_grade"
+  },
   "models": {
-    "logistic_regression": {
-      "roc_auc": 0.7003,
-      "pr_auc": 0.2784,
-      "brier": 0.1188,
-      "ks": 0.2932,
-      "mean_predicted_pd": 0.1331,
-      "train_roc_auc": 0.694
+    "full": {
+      "logistic_regression": {
+        "uncalibrated": {
+          "roc_auc": 0.698,
+          "pr_auc": 0.2763,
+          "brier": 0.1196,
+          "ks": 0.2899,
+          "mean_predicted_pd": 0.1218
+        },
+        "calibrated": {
+          "roc_auc": 0.698,
+          "pr_auc": 0.2763,
+          "brier": 0.1189,
+          "ks": 0.2899,
+          "mean_predicted_pd": 0.1354
+        },
+        "fit_roc_auc": 0.6952
+      },
+      "xgboost": {
+        "uncalibrated": {
+          "roc_auc": 0.703,
+          "pr_auc": 0.2815,
+          "brier": 0.1195,
+          "ks": 0.2964,
+          "mean_predicted_pd": 0.116
+        },
+        "calibrated": {
+          "roc_auc": 0.703,
+          "pr_auc": 0.2815,
+          "brier": 0.1195,
+          "ks": 0.2964,
+          "mean_predicted_pd": 0.1324
+        },
+        "fit_roc_auc": 0.7353
+      }
     },
-    "xgboost": {
-      "roc_auc": 0.7066,
-      "pr_auc": 0.2871,
-      "brier": 0.1186,
-      "ks": 0.3008,
-      "mean_predicted_pd": 0.1228,
-      "train_roc_auc": 0.7267
+    "without_pricing": {
+      "logistic_regression": {
+        "uncalibrated": {
+          "roc_auc": 0.6825,
+          "pr_auc": 0.2626,
+          "brier": 0.1202,
+          "ks": 0.266,
+          "mean_predicted_pd": 0.1332
+        },
+        "calibrated": {
+          "roc_auc": 0.6825,
+          "pr_auc": 0.2626,
+          "brier": 0.12,
+          "ks": 0.266,
+          "mean_predicted_pd": 0.1403
+        },
+        "fit_roc_auc": 0.6887
+      },
+      "xgboost": {
+        "uncalibrated": {
+          "roc_auc": 0.6919,
+          "pr_auc": 0.271,
+          "brier": 0.1195,
+          "ks": 0.2778,
+          "mean_predicted_pd": 0.1336
+        },
+        "calibrated": {
+          "roc_auc": 0.6919,
+          "pr_auc": 0.271,
+          "brier": 0.12,
+          "ks": 0.2778,
+          "mean_predicted_pd": 0.1404
+        },
+        "fit_roc_auc": 0.7344
+      }
     }
   },
   "params": {
